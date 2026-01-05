@@ -96,5 +96,58 @@ def gerar_tudo():
 
 # Execução
 resultado = gerar_tudo()
-print(f"Sucesso! Geradas {len(resultado)} sílabas válidas.")
-print("Exemplos:", resultado[100:110])
+print(f" a fonologia do áðanîeqéñoú permite {len(resultado)} sílabas possíveis.")
+#print("Exemplos:", resultado[100:110])
+
+# Classificação das vogais para a regra do 'y'
+POSICAO_VOGAL = {
+    'i': 'frontal', 'e': 'frontal',
+    'y': 'central', 'a': 'central',
+    'u': 'traseira', 'o': 'traseira'
+}
+
+def aplicar_regras_pre_tonica(silabas):
+    for i in range(len(silabas) - 1):
+        atual = silabas[i]
+        proxima = silabas[i+1]
+        
+        # REGRA: y + Vogal (V) -> Inserção de j ou jv no Onset da próxima sílaba
+        if atual['v'] == 'y':
+            v_seguinte = proxima['v'][0] # Pega a base da vogal (ex: 'ã' -> 'a')
+            pos = POSICAO_VOGAL.get(v_seguinte)
+            
+            if pos in ['frontal', 'central']:
+                # Aparece 'j' no onset da próxima
+                proxima['c_on'] = sons['j']
+                proxima['l_on'] = None 
+            elif pos == 'traseira':
+                # Aparece 'jv' no onset da próxima
+                proxima['c_on'] = sons['jv']
+                proxima['l_on'] = None
+                
+    for i in range(len(silabas) - 1):
+        atual = silabas[i]
+        proxima = silabas[i+1]
+        
+        # A regra só dispara se a sílaba seguinte começar por VOGAL (onset vazio)
+        if proxima['c_on'] is None:
+            v_atual = atual['v'].replace("̃", "") 
+            v_prox = proxima['v'].replace("̃", "") 
+
+            # 1. Regra do 'y'
+            if v_atual == 'y':
+                pos = POSICAO_VOGAL.get(v_prox[0])
+                if pos in ['frontal', 'central']:
+                    proxima['c_on'] = sons['j']
+                elif pos == 'traseira':
+                    proxima['c_on'] = sons['jv']
+
+            # 2. Regra do 'u' (exceto antes de 'a')
+            elif v_atual == 'u' and v_prox[0] != 'a':
+                proxima['c_on'] = sons['jv']
+
+            # 3. Regra do 'o' (antes de 'y')
+            elif v_atual == 'o' and v_prox[0] == 'y':
+                proxima['c_on'] = sons['jv']
+                
+    return silabas
